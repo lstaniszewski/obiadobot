@@ -1,0 +1,14 @@
+[
+{
+    "name": "john.doe",
+    "shortName": "JD",
+    "meal": "",
+    "extra": false
+},
+{
+    "name": "a.baz",
+    "shortName": "AB",
+    "meal": "",
+    "extra": false
+}
+]
