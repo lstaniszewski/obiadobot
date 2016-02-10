@@ -1,0 +1,21 @@
+{
+  "name": "omnomnom-bot",
+  "version": "1.0.0",
+  "description": "Slack bot to order food",
+  "main": "main.js",
+  "dependencies": {
+    "nodemailer": "^2.1.0",
+    "slack-client": "^1.5.1",
+    "underscore": "^1.8.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "nodejs",
+    "slack"
+  ],
+  "author": "Łukasz Staniszewski",
+  "license": "ISC"
+}
