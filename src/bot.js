@@ -49,7 +49,7 @@ class Bot {
 
                 if(/^\!coto/.test(response.text)) {
                     var q = parseInt(response.text.match(/^\!coto (\d{1,2})$/)[1]);
-                    if(q > 0 && q < menu.length) {
+                    if(q >= 0 && q < menu.length) {
                         self.channel.send("" + q + " to: " + menu[q].name + " - " + menu[q].desc);
                     }
                     else {
@@ -62,7 +62,7 @@ class Bot {
                     self.orderFlag = true
                     var q = parseInt(response.text.match(/^\!jesc (\d{1,2})/)[1]);
 
-                    if(q > 0 && q < menu.length) {
+                    if(q >= 0 && q < menu.length) {
                         self.orderCheckExtra(response.text, q).then(function(mealName) {
                             var order = _.findWhere(orderList, {"name": self.user.name});
                             if(order) {
