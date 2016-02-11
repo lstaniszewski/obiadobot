@@ -25,7 +25,7 @@ class Bot {
     }
 
     onSlackOpen() {
-        this.channel = this.slack.getChannelByName(this.channelName);
+        this.channel = this.slack.getGroupByName(this.channelName);
         this.channel.send('Hello, wpisz !pomocy dla listy opcji');
         this.channelId = this.channel.id;
         this.orderListNames = _.pluck(orderList, 'name');
