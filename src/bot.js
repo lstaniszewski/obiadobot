@@ -2,7 +2,9 @@
 
 var Slack = require('slack-client');
 var _ = require('underscore');
+var moment = require('moment');
 var nodemailer = require('nodemailer');
+var fs = require('fs');
 
 var menu = require('./../data/menu.json');
 var orderList = require('./../data/orderlist.json');
@@ -10,8 +12,19 @@ var orderList = require('./../data/orderlist.json');
 class Bot {
 
     constructor(token, channelName) {
-        this.channelName = channelName;
-        this.slack = new Slack(token, true, true);
+        var self = this;
+        self.channelName = channelName;
+        self.slack = new Slack(token, true, true);
+        self.orderDate = moment().format("YYYYMMDD");
+        self.orderDateFile = "orders/" + self.orderDate + ".json";
+
+        try {
+            self.orderList = JSON.parse(fs.readFileSync(self.orderDateFile, 'utf8'));
+        } catch (error) {
+            fs.writeFile(self.orderDateFile, JSON.stringify(orderList), function(){
+                self.orderList = JSON.parse(fs.readFileSync(self.orderDateFile, 'utf8'));
+            });
+        }
     }
 
     login() {
@@ -19,7 +32,6 @@ class Bot {
         this.slack.on('open', function() {
             self.onSlackOpen();
         });
-
         this.respondToMessages();
         this.slack.login();
     }
@@ -28,7 +40,7 @@ class Bot {
         this.channel = this.slack.getGroupByName(this.channelName);
         this.channel.send('Hello, wpisz !pomocy dla listy opcji');
         this.channelId = this.channel.id;
-        this.orderListNames = _.pluck(orderList, 'name');
+        this.orderListNames = _.pluck(this.orderList, 'name');
         this.orderHelper = [{"shortcut": "z", "longname": "ziemniaki"}, {"shortcut": "f", "longname": "frytki"}];
         this.orderFlag = false;
     }
@@ -37,8 +49,10 @@ class Bot {
         var self = this;
         this.slack.on('message', function(response) {
             if(response.channel === self.channelId) {
+                self.checkDate(response.ts);
                 self.user = self.slack.getUserByID(response.user);
                 self.orderFlag = false;
+
                 if(/^\!pomocy$/.test(response.text)) {
                     self.channel.send("Lista dostępnych opcji:\n!menu - wyswietla cale menu\n !coto <numer> - podpowiada jakim daniem jest numer\n !jesc <numer> - zamawia danie o numerze\n!jesc <kto> <numer> - zamawia danie o numerze za dana osobe\n!pozamawiane - lista zamowien")
                 }
@@ -55,7 +69,6 @@ class Bot {
                     else {
                         self.channel.send("Fial: " + q + " nie ma w menu");
                     }
-
                 }
 
                 if(/^!jesc \d{1,2}/i.test(response.text)) {
@@ -64,14 +77,10 @@ class Bot {
 
                     if(q >= 0 && q < menu.length) {
                         self.orderCheckExtra(response.text, q).then(function(mealName) {
-                            var order = _.findWhere(orderList, {"name": self.user.name});
-                            if(order) {
-                                order.meal = mealName;
-                            }
-                            else {
-                                orderList.push({"name": self.user.name, "shortName": "" + self.user.profile.first_name.charAt(0) + self.user.profile.last_name.charAt(0), "meal": mealName, "extra": true})
-                            }
+                            self.orderAdd(self.user.name, mealName);
                             self.channel.send("@" + self.user.name + " zamówiono: " + mealName);
+                            fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
+
                         }, function(orderName) {
                             self.channel.send("Fial: fryty czy ziemniaki? wpisz "+q+"z lub "+q+"f");
                         });
@@ -80,23 +89,18 @@ class Bot {
                         self.channel.send("Fial: " + q + " nie ma w menu");
                     }
                 }
-                if(/^\!jesc \w* \d{1,2}/i.test(response.text)) {
+
+                if(/^\!jesc [\w\.]* \d{1,2}/i.test(response.text)) {
                     self.orderFlag = true
-                    var q = parseInt(response.text.match(/^\!jesc \w* (\d{1,2})/)[1]);
-                    var orderName = response.text.match(/^\!jesc (\w*) \d{1,2}/)[1];
+                    var q = parseInt(response.text.match(/^\!jesc [\w\.]* (\d{1,2})/)[1]);
+                    var orderName = response.text.match(/^\!jesc ([\w\.]*) \d{1,2}/)[1];
 
-                    if(q > 0 && q < menu.length) {
-
+                    if(q >= 0 && q < menu.length) {
                         if(self.validateName(orderName)){
                             self.orderCheckExtra(response.text, q).then(function(mealName) {
-                                var order = _.findWhere(orderList, {"name": orderName});
-                                if(order) {
-                                    order.meal = mealName;
-                                }
-                                else {
-                                    orderList.push({"name": self.user.name, "shortName": "" + self.user.profile.first_name.charAt(0) + self.user.profile.last_name.charAt(0), "meal": mealName, "extra": true})
-                                }
+                                self.orderAdd(orderName, mealName);
                                 self.channel.send("@" + self.user.name + " zamówiono za @" + orderName + ": " + menu[q].name);
+                                fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
                             }, function() {
                                 self.channel.send("Fial: fryty czy ziemniaki? wpisz "+q+"z lub "+q+"f");
                             });
@@ -104,16 +108,15 @@ class Bot {
                         else {
                             self.channel.send("Fial: " + orderName + " nie istnieje");
                         }
-
                     }
                     else {
                         self.channel.send("Fial: " + q + " nie ma w menu");
                     }
                 }
+
                 if(/^\!jesc.*$/i.test(response.text) && !self.orderFlag) {
                     self.channel.send("Fial: Chyba zapomniałes czegos podać");
                 }
-
 
                 if(/^\!pozamawiane$/.test(response.text)) {
                     self.channel.send(self.displayOrder());
@@ -124,6 +127,30 @@ class Bot {
                 }
             }
         });
+    }
+
+    checkDate(timestamp) {
+        var self = this;
+        var date = moment.unix(timestamp).format("YYYYMMDD");
+
+        if(self.orderDate !== date) {
+            self.orderDate = date;
+            self.orderDateFile = "orders/" + self.orderDate + ".json";
+            fs.writeFile(self.orderDateFile, JSON.stringify(orderList), function(){
+                self.orderList = JSON.parse(fs.readFileSync(self.orderDateFile, 'utf8'));
+            });
+        }
+    }
+
+    orderAdd(orderName, mealName) {
+        var self = this;
+        var order = _.findWhere(self.orderList, {"name": orderName});
+        if(order) {
+            order.meal = mealName;
+        }
+        else {
+            self.orderList.push({"name": self.user.name, "shortName": "" + self.user.profile.first_name.charAt(0) + self.user.profile.last_name.charAt(0), "meal": mealName, "extra": true})
+        }
     }
 
     orderCheckExtra(responseText, q) {
@@ -145,7 +172,6 @@ class Bot {
 
     validateName(name) {
         return _.contains(this.orderListNames, name);
-
     }
 
     displayMenu() {
@@ -160,7 +186,7 @@ class Bot {
     displayOrder() {
         var response = "";
 
-        for (let value of orderList) {
+        for (let value of this.orderList) {
             response += value.name + ": " + value.meal + "\n";
         }
         return response;
@@ -168,8 +194,7 @@ class Bot {
 
     orderTable() {
         var response = "";
-
-        var userList = _.where(orderList, {"extra": false});
+        var userList = _.where(this.orderList, {"extra": false});
 
         for (let order of userList) {
             response += "<tr><td style='border: 1px solid black; width: 50%;'>"+order.shortName+"</td><td style='border: 1px solid black; width: 50%;'>"+order.meal+"</td></tr>"
@@ -178,7 +203,7 @@ class Bot {
     }
 
     extraTable() {
-        var userList = _.where(orderList, {"extra": true});
+        var userList = _.where(this.orderList, {"extra": true});
 
         if(!!userList.length){
             var response = "<br><h4>Dodatkowo: </h4><br>";
@@ -191,6 +216,7 @@ class Bot {
             return "";
         }
     }
+
     sendOrder() {
         var self = this;
         var smtpConfig = require('./../data/mail.json');
@@ -206,7 +232,6 @@ class Bot {
             text: self.displayOrder(), // plaintext body
             html: '<h4>Prosimy o sztućce</h4><table style="border-collapse: collapse;width: 50%;">'+self.orderTable()+'</table>' + self.extraTable() // html body
         };
-
         // send mail with defined transport object
         transporter.sendMail(mailOptions, function(error, info){
             if(error){
