@@ -1,4 +1,9 @@
 {
     "slackToken": "",
-    "channelName": ""
+    "channelName": "",
+    "mailConfig": {
+        "from": "",
+        "to": "",
+        "subject": ""
+    }
 }
