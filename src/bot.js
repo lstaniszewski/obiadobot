@@ -85,8 +85,8 @@ class Bot {
                                 self.channel.send("Wylosowano: " + mealName + "\n Smacznego!");
                                 self.orderAdd(self.user.name, mealName, true);
                                 fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
-                            }, 2000);
-                        }, 1000);
+                            }, 9000);
+                        }, 3000);
                     }
                 }
 
@@ -129,14 +129,14 @@ class Bot {
                 }
 
                 if(/^\!jesc [\w\.]* \d{1,2}/i.test(response.text)) {
-                    var orderUser = _.findWhere(self.orderList, {"name": self.user.name});
+                    var orderName = response.text.match(/^\!jesc ([\w\.]*) \d{1,2}/i)[1];
+                    var orderUser = _.findWhere(self.orderList, {"name": orderName});
                     self.orderFlag = true
                     if(orderUser && orderUser.roulette) {
                         self.channel.send("Ha ha, nope");
                     }
                     else {
                         var q = parseInt(response.text.match(/^\!jesc [\w\.]* (\d{1,2})/i)[1]);
-                        var orderName = response.text.match(/^\!jesc ([\w\.]*) \d{1,2}/i)[1];
 
                         if(q >= 0 && q < menu.length) {
                             if(self.validateName(orderName)){
