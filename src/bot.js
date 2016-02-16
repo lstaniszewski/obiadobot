@@ -261,6 +261,16 @@ class Bot {
         }
     }
 
+    addPhone() {
+        if(self.mailConfig.phone.length > 0) {
+            return "<br>Numer kontaktowy: " + self.mailConfig.phone;
+        }
+        else {
+            return "";
+        }
+
+    }
+
     sendOrder() {
         var self = this;
         var smtpConfig = require('./../data/mail.json');
@@ -274,7 +284,7 @@ class Bot {
             to: self.mailConfig.to, // list of receivers
             subject: self.mailConfig.subject, // Subject line
             text: 'Prosimy o sztućce \n' + self.displayOrder(), // plaintext body
-            html: '<h4>Prosimy o sztućce</h4><table style="border-collapse: collapse;width: 50%;">'+self.orderTable()+'</table>' + self.extraTable() // html body
+            html: '<h4>Prosimy o sztućce</h4><table style="border-collapse: collapse;width: 50%;">'+self.orderTable()+ '</table>' + self.extraTable() + self.addPhone() // html body
         };
         // send mail with defined transport object
         transporter.sendMail(mailOptions, function(error, info){

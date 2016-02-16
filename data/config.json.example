@@ -4,6 +4,7 @@
     "mailConfig": {
         "from": "",
         "to": "",
-        "subject": ""
+        "subject": "",
+        "phone": ""
     }
 }
