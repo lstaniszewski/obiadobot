@@ -39,7 +39,6 @@ class Bot {
 
     onSlackOpen() {
         this.channel = this.slack.getGroupByName(this.channelName);
-        this.channel.send('Hello, wpisz !pomocy dla listy opcji');
         this.channelId = this.channel.id;
         this.orderListNames = _.pluck(this.orderList, 'name');
         this.orderHelper = [{"shortcut": "z", "longname": "ziemniaki"}, {"shortcut": "f", "longname": "frytki"}];
@@ -71,20 +70,19 @@ class Bot {
                         for (let name of rouletteList) {
                             response += name + "\n";
                         }
+                        var mealName = _.sample(rouletteList);
+                        var meal = _.findWhere(menu, {"name": mealName});
+                        if(meal.extraInfo){
+                            var mealType = _.sample(_.pluck(self.orderHelper, "longname"));
+                            mealName += " / " + mealType;
+                        }
+                        self.orderAdd(self.user.name, mealName, true);
+                        fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
+
                         setTimeout(function () {
                             self.channel.send("Wylosowane dania to: \n" + response);
-
-                            var mealName = _.sample(rouletteList);
-                            var meal = _.findWhere(menu, {"name": mealName});
-                            if(meal.extraInfo){
-                                var mealType = _.sample(_.pluck(self.orderHelper, "longname"));
-                                mealName += " / " + mealType;
-                            }
-
                             setTimeout(function (){
                                 self.channel.send("Wylosowano: " + mealName + "\n Smacznego!");
-                                self.orderAdd(self.user.name, mealName, true);
-                                fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
                             }, 9000);
                         }, 3000);
                     }
@@ -95,7 +93,7 @@ class Bot {
                 }
 
                 if(/^\!coto/.test(response.text)) {
-                    var q = parseInt(response.text.match(/^\!coto (\d{1,2})$/i)[1]);
+                    var q = parseInt(response.text.match(/^\!coto[ ]+(\d{1,2})$/i)[1]);
                     if(q >= 0 && q < menu.length) {
                         self.channel.send("" + q + " to: " + menu[q].name + " - " + menu[q].desc);
                     }
@@ -104,14 +102,14 @@ class Bot {
                     }
                 }
 
-                if(/^!jesc \d{1,2}/i.test(response.text)) {
+                if(/^!jesc[ ]+\d{1,2}/i.test(response.text)) {
                     var orderUser = _.findWhere(self.orderList, {"name": self.user.name});
                     self.orderFlag = true
                     if(orderUser && orderUser.roulette) {
                         self.channel.send("Ha ha, nope");
                     }
                     else {
-                        var q = parseInt(response.text.match(/^\!jesc (\d{1,2})/i)[1]);
+                        var q = parseInt(response.text.match(/^\!jesc[ ]+(\d{1,2})/i)[1]);
 
                         if(q >= 0 && q < menu.length) {
                             self.orderCheckExtra(response.text, q).then(function(mealName) {
@@ -128,15 +126,15 @@ class Bot {
                     }
                 }
 
-                if(/^\!jesc [\w\.]* \d{1,2}/i.test(response.text)) {
-                    var orderName = response.text.match(/^\!jesc ([\w\.]*) \d{1,2}/i)[1];
+                if(/^\!jesc[ ]+[\w\.]*[ ]+\d{1,2}/i.test(response.text)) {
+                    var orderName = response.text.match(/^\!jesc[ ]+([\w\.]*)[ ]+\d{1,2}/i)[1];
                     var orderUser = _.findWhere(self.orderList, {"name": orderName});
                     self.orderFlag = true
                     if(orderUser && orderUser.roulette) {
                         self.channel.send("Ha ha, nope");
                     }
                     else {
-                        var q = parseInt(response.text.match(/^\!jesc [\w\.]* (\d{1,2})/i)[1]);
+                        var q = parseInt(response.text.match(/^\!jesc[ ]+[\w\.]*[ ]+(\d{1,2})/i)[1]);
 
                         if(q >= 0 && q < menu.length) {
                             if(self.validateName(orderName)){
@@ -272,10 +270,10 @@ class Bot {
 
         // setup e-mail data with unicode symbols
         var mailOptions = {
-            from: mailConfig.from, // sender address
-            to: mailConfig.to, // list of receivers
-            subject: mailConfig.subject, // Subject line
-            text: self.displayOrder(), // plaintext body
+            from: self.mailConfig.from, // sender address
+            to: self.mailConfig.to, // list of receivers
+            subject: self.mailConfig.subject, // Subject line
+            text: 'Prosimy o sztućce \n' + self.displayOrder(), // plaintext body
             html: '<h4>Prosimy o sztućce</h4><table style="border-collapse: collapse;width: 50%;">'+self.orderTable()+'</table>' + self.extraTable() // html body
         };
         // send mail with defined transport object
