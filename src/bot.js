@@ -19,6 +19,15 @@ class Bot {
         self.orderDate = moment().format("YYYYMMDD");
         self.orderDateFile = "orders/" + self.orderDate + ".json";
 
+        // Check if orders directory exists
+        // if not exists create one
+        try {
+            fs.mkdirSync('orders');
+        } catch (e) {
+            if (e.code != 'EEXIST') throw e;
+        }
+
+
         try {
             self.orderList = JSON.parse(fs.readFileSync(self.orderDateFile, 'utf8'));
         } catch (error) {
