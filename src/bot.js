@@ -57,14 +57,14 @@ class Bot {
 
     respondToMessages() {
         var self = this;
-        this.slack.on('message', function(response) {
+        self.slack.on('message', function(response) {
             if(response.channel === self.channelId) {
                 self.checkDate(response.ts);
                 self.user = self.slack.getUserByID(response.user);
                 self.orderFlag = false;
 
                 if(/^\!pomocy$/.test(response.text)) {
-                    self.channel.send("Lista dostępnych opcji:\n!menu - wyswietla cale menu\n !coto <numer> - podpowiada jakim daniem jest numer\n !jesc <numer> - zamawia danie o numerze\n!jesc <kto> <numer> - zamawia danie o numerze za dana osobe\n!pozamawiane - lista zamowien\n!ruletka - obiadowa ruletka, po wpisaniu komendy nie ma odwrotu.")
+                    self.channel.send("Lista dostępnych opcji:\n!menu - wyswietla cale menu\n !coto <numer> - podpowiada jakim daniem jest numer\n !jesc <numer> - zamawia danie o numerze\n!jesc <kto> <numer> - zamawia danie o numerze za dana osobe\n!pozamawiane - lista zamowien\n!ruletka - obiadowa ruletka, po wpisaniu komendy nie ma odwrotu.\n!zamow - wysyla zamowienia/")
                 }
 
                 if(/^\!ruletka$/.test(response.text)){
@@ -86,7 +86,7 @@ class Bot {
                             mealName += " / " + mealType;
                         }
                         self.orderAdd(self.user.name, mealName, true);
-                        fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
+                        fs.writeFileSync(self.orderDateFile, JSON.stringify(self.orderList));
 
                         setTimeout(function () {
                             self.channel.send("Wylosowane dania to: \n" + response);
@@ -124,7 +124,7 @@ class Bot {
                             self.orderCheckExtra(response.text, q).then(function(mealName) {
                                 self.orderAdd(self.user.name, mealName);
                                 self.channel.send("@" + self.user.name + " zamówiono: " + mealName);
-                                fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
+                                fs.writeFileSync(self.orderDateFile, JSON.stringify(self.orderList));
                             }, function(orderName) {
                                 self.channel.send("Fial: fryty czy ziemniaki? wpisz "+q+"z lub "+q+"f");
                             });
@@ -150,7 +150,7 @@ class Bot {
                                 self.orderCheckExtra(response.text, q).then(function(mealName) {
                                     self.orderAdd(orderName, mealName);
                                     self.channel.send("@" + self.user.name + " zamówiono za @" + orderName + ": " + menu[q].name);
-                                    fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
+                                    fs.writeFileSync(self.orderDateFile, JSON.stringify(self.orderList));
                                 }, function() {
                                     self.channel.send("Fial: fryty czy ziemniaki? wpisz "+q+"z lub "+q+"f");
                                 });
@@ -174,10 +174,25 @@ class Bot {
                 }
 
                 if(/^\!zamow$/.test(response.text)) {
+                    if(self.checkOrderValid()) {
+                        self.sendOrder();
+                    };
+                    self.channel.send("Fial: Jeszcze nie wszyscy zamówili");
+                }
+
+                if(/^\!zamow!!$/.test(response.text)) {
                     self.sendOrder();
                 }
             }
         });
+    }
+
+    checkOrderValid() {
+        var self = this;
+        if(_.filter(_.pluck(self.orderList, "meal"), function(meal) { return meal === ''; }).length) {
+            return false;
+        };
+        return true;
     }
 
     checkDate(timestamp) {
@@ -187,9 +202,8 @@ class Bot {
         if(self.orderDate !== date) {
             self.orderDate = date;
             self.orderDateFile = "orders/" + self.orderDate + ".json";
-            fs.writeFile(self.orderDateFile, JSON.stringify(orderList), function(){
-                self.orderList = JSON.parse(fs.readFileSync(self.orderDateFile, 'utf8'));
-            });
+            self.orderList = JSON.stringify(orderList);
+            fs.writeFileSync(self.orderDateFile, JSON.stringify(orderList));
         }
     }
 
@@ -214,7 +228,9 @@ class Bot {
                     var shortcut = responseText.match(/^\!jesc.* \d{1,2}([zf])$/)[1];
                     var helper = _.findWhere(self.orderHelper, {"shortcut": shortcut});
                     resolve("" + menu[q].name + " / " + helper.longname);
-                }else {
+                } else if (q===0) {
+                    resolve("" + menu[q].name);
+                } else {
                     reject();
                 }
             }else {
@@ -271,6 +287,7 @@ class Bot {
     }
 
     addPhone() {
+        var self = this;
         if(self.mailConfig.phone.length > 0) {
             return "<br>Numer kontaktowy: " + self.mailConfig.phone;
         }
@@ -301,6 +318,7 @@ class Bot {
                 self.channel.send('fial: ' + error);
             }
             self.channel.send('powysyłane!');
+            self.orderList = JSON.stringify(orderList);
         });
     }
 }
