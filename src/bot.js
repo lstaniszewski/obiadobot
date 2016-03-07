@@ -176,8 +176,9 @@ class Bot {
                 if(/^\!zamow$/.test(response.text)) {
                     if(self.checkOrderValid()) {
                         self.sendOrder();
-                    };
-                    self.channel.send("Fial: Jeszcze nie wszyscy zamówili");
+                    } else {
+                        self.channel.send("Fial: Jeszcze nie wszyscy zamówili");
+                    }
                 }
 
                 if(/^\!zamow!!$/.test(response.text)) {
