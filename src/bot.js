@@ -86,7 +86,7 @@ class Bot {
                             mealName += " / " + mealType;
                         }
                         self.orderAdd(self.user.name, mealName, true);
-                        fs.writeFileSync(self.orderDateFile, JSON.stringify(self.orderList));
+                        fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
 
                         setTimeout(function () {
                             self.channel.send("Wylosowane dania to: \n" + response);
@@ -124,7 +124,7 @@ class Bot {
                             self.orderCheckExtra(response.text, q).then(function(mealName) {
                                 self.orderAdd(self.user.name, mealName);
                                 self.channel.send("@" + self.user.name + " zamówiono: " + mealName);
-                                fs.writeFileSync(self.orderDateFile, JSON.stringify(self.orderList));
+                                fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
                             }, function(orderName) {
                                 self.channel.send("Fial: fryty czy ziemniaki? wpisz "+q+"z lub "+q+"f");
                             });
@@ -150,7 +150,7 @@ class Bot {
                                 self.orderCheckExtra(response.text, q).then(function(mealName) {
                                     self.orderAdd(orderName, mealName);
                                     self.channel.send("@" + self.user.name + " zamówiono za @" + orderName + ": " + menu[q].name);
-                                    fs.writeFileSync(self.orderDateFile, JSON.stringify(self.orderList));
+                                    fs.writeFile(self.orderDateFile, JSON.stringify(self.orderList));
                                 }, function() {
                                     self.channel.send("Fial: fryty czy ziemniaki? wpisz "+q+"z lub "+q+"f");
                                 });
@@ -203,8 +203,9 @@ class Bot {
         if(self.orderDate !== date) {
             self.orderDate = date;
             self.orderDateFile = "orders/" + self.orderDate + ".json";
-            self.orderList = JSON.stringify(orderList);
-            fs.writeFileSync(self.orderDateFile, JSON.stringify(orderList));
+            fs.writeFile(self.orderDateFile, JSON.stringify(orderList), function(){
+                self.orderList = JSON.parse(fs.readFileSync(self.orderDateFile, 'utf8'));
+            });
         }
     }
 
@@ -319,7 +320,7 @@ class Bot {
                 self.channel.send('fial: ' + error);
             }
             self.channel.send('powysyłane!');
-            self.orderList = JSON.stringify(orderList);
+            self.orderList = orderList;
         });
     }
 }
