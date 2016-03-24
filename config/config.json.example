@@ -1,0 +1,24 @@
+{
+    "slackToken": "",
+    "channelName": "",
+    "addressData": {
+        "from": "",
+        "to": "",
+        "subject": "",
+        "phone": ""
+    },
+    "mailConfig": {
+        "host": "",
+        "port": 25,
+        "secure": false,
+        "auth": {
+            "user": "",
+            "pass": ""
+        }
+    },
+    "database": {
+        "name": "",
+        "username": "",
+        "password": "null"
+    }
+}
