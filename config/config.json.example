@@ -1,13 +1,16 @@
 {
-    "slackToken": "",
-    "channelName": "",
-    "addressData": {
+    "slack": {
+        "token": "",
+        "channel": "",
+        "debug": false
+    },
+    "address": {
         "from": "",
         "to": "",
         "subject": "",
         "phone": ""
     },
-    "mailConfig": {
+    "mail": {
         "host": "",
         "port": 25,
         "secure": false,

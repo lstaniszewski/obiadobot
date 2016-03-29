@@ -9,10 +9,8 @@ var sequelize = new Sequelize(config.name, config.username, config.password, {di
 var db        = {};
 
 fs.readdirSync(__dirname)
-    .filter(function(file) {
-        return (file.indexOf("_") === 0);
-    })
-    .forEach(function(file) {
+    .filter((file) => file.indexOf("_") === 0)
+    .forEach((file) => {
         var model = sequelize.import(path.join(__dirname, file));
         if (model instanceof Array) {
             model.forEach(function(m) {
@@ -23,7 +21,7 @@ fs.readdirSync(__dirname)
         }
     });
 
-Object.keys(db).forEach(function(modelName) {
+Object.keys(db).forEach((modelName) => {
     if ('associate' in db[modelName]) {
         db[modelName].associate(db);
     }

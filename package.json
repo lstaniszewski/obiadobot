@@ -4,14 +4,14 @@
   "description": "Slack bot to order food",
   "main": "main.js",
   "dependencies": {
+    "@slack/client": "^2.2.1",
     "lodash": "^4.6.1",
     "moment": "^2.11.2",
     "nodemailer": "^2.1.0",
-    "slack-client": "^1.5.1",
+    "sequelize": "^3.20.0"
   },
   "devDependencies": {
-    "jasmine-node": "^1.14.5",
-    "sequelize": "^3.20.0"
+    "jasmine-node": "^1.14.5"
   },
   "scripts": {
     "test": "./node_modules/jasmine-node/bin/jasmine-node spec",

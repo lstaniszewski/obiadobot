@@ -8,7 +8,7 @@ module.exports = function(Sequelize, DataTypes) {
         isExtra: { type: DataTypes.BOOLEAN, defaultValue: false}
     },{
         classMethods: {
-          associate: function(models) {
+          associate: (models) => {
             Order.belongsTo(models.User),
             Order.belongsTo(models.Meal),
             Order.belongsTo(models.MealBase),
