@@ -20,21 +20,28 @@ class Bot {
         this.rtm.on(CLIENT_EVENTS.RTM.AUTHENTICATED, (rtmStartData) => {
             BotData.slackStore.cacheRtmStart(_.cloneDeep(rtmStartData));
             BotData.channel = BotData.slackStore.getChannelOrGroupByName(this.channelName);
+            BotData.send = (text, channelId) => {
+                this.rtm.send({
+                    text: text,
+                    channel: channelId,
+                    type: RTM_EVENTS.MESSAGE
+                });
+            };
         });
 
         this.rtm.on(RTM_EVENTS.MESSAGE, (response) => {
             if(response.channel[0] === 'D') {
                 DMHandler(response).then((r) => {
-                    this.rtm.sendMessage(r, response.channel);
+                    BotData.send(r, response.channel);
                 }, (r) => {
-                    this.rtm.sendMessage("Fial: "+r, response.channel);
+                    BotData.send("Fial: "+r, response.channel);
                 });
             }
             if(response.channel === BotData.channel.id) {
                 MessageHandler(response).then((r) => {
-                    this.rtm.sendMessage(r, BotData.channel.id);
+                    BotData.send(r, BotData.channel.id);
                 }, (r) => {
-                    this.rtm.sendMessage("Fial: "+r, BotData.channel.id);
+                    BotData.send("Fial: "+r, BotData.channel.id);
                 });
             }
         });
